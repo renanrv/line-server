@@ -1,0 +1,85 @@
+openapi: 3.0.3
+info:
+  version: v0
+  title: Line Server API
+  description: Serves individual lines of an immutable text file over the network to clients
+
+servers:
+  - url: http://localhost:8080
+    description: Local server
+
+paths:
+  /v0/lines/{line_index}:
+    get:
+      description: "Returns an HTTP status of 200 and the text of the requested line or an HTTP 413 status if the requested line is beyond the end of the file."
+      tags:
+        - line
+      security:
+        - BasicAuth: [ ]
+      parameters:
+        - $ref: "#/components/parameters/LineIndex"
+      responses:
+        200:
+          description: Returns the text of the requested line
+          $ref: "#/components/responses/LineResponse"
+        401:
+          description: Access token in the headers is missing or invalid
+          $ref: "#/components/responses/UnauthorizedResponse"
+        413:
+          description: The requested line is beyond the end of the file
+          $ref: "#/components/responses/RequestEntityTooLargeResponse"
+
+components:
+  parameters:
+    LineIndex:
+      name: line_index
+      in: path
+      required: true
+      description: Line index to be retrieved
+      schema:
+        type: integer
+    Authorization:
+      name: authorization
+      in: header
+      required: true
+      schema:
+        type: string
+        minLength: 1
+      description: Basic authentication header with the format "Basic <base64-encoded-credentials>"
+      example: Basic dXNlcm5hbWU6cGFzc3dvcmQ=
+
+  # Keeping schemas to enable code generation
+  schemas:
+    LineResponse:
+      type: object
+      required:
+        - text
+      properties:
+        text:
+          type: string
+          example: "This is a sample line of text from the file."
+
+    NoResponse:
+      type: object
+
+  responses:
+    UnauthorizedResponse:
+      description: Access token in the headers is missing or invalid
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NoResponse"
+
+    LineResponse:
+      description: Response for requested line
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/LineResponse"
+
+    RequestEntityTooLargeResponse:
+      description: The requested line is beyond the end of the file
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/NoResponse"
