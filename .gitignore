@@ -27,3 +27,6 @@ go.work.sum
 
 # JetBrains IDEs
 .idea
+
+# Generated files
+internal-tools/file-generator/output/output.txt

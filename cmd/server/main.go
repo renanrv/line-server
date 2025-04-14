@@ -31,6 +31,8 @@ func main() {
 		corsAllowedOrigins = fs.String("cors_allowed_origins", "http://localhost:8080",
 			"comma separated list of allowed origins")
 		logLevel = fs.Int("log_level", int(zerolog.InfoLevel), "the log level used for logging")
+		filePath = fs.String("file_path", "./internal-tools/file-generator/output/output.txt",
+			"the path to the file that will be used to read the lines")
 	)
 	fs.Usage = usageFor(fs, os.Args[0]+" [flags]")
 	_ = fs.Parse(os.Args[1:])
@@ -44,6 +46,7 @@ func main() {
 		Str("debug_addr", *debugAddr).
 		Str("http_addr", *httpAddr).
 		Int("log_level", *logLevel).
+		Str("file_path", *filePath).
 		Msg("non-secret arguments")
 
 	zeroLog.Info().Msg("starting line server")
@@ -62,7 +65,8 @@ func main() {
 	}
 
 	dependencies := services.Dependencies{
-		Logger: &zeroLog,
+		Logger:   &zeroLog,
+		FilePath: *filePath,
 	}
 	srv, err := services.New(dependencies)
 	if err != nil {

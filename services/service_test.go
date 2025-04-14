@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/renanrv/line-server/pkg/utils"
 	"github.com/renanrv/line-server/services"
 	"github.com/rs/zerolog"
 )
@@ -20,7 +21,8 @@ func TestNew(t *testing.T) {
 		{
 			name: "Valid dependencies",
 			dependencies: services.Dependencies{
-				Logger: &zerolog.Logger{},
+				Logger:   &zerolog.Logger{},
+				FilePath: "testfile.txt",
 			},
 			expectedErrorMsg: "",
 		},
@@ -30,6 +32,13 @@ func TestNew(t *testing.T) {
 				Logger: nil,
 			},
 			expectedErrorMsg: "logger is required",
+		},
+		{
+			name: "Empty file path",
+			dependencies: services.Dependencies{
+				Logger: &zerolog.Logger{},
+			},
+			expectedErrorMsg: "file path is required",
 		},
 	}
 
@@ -50,6 +59,9 @@ func TestNew(t *testing.T) {
 }
 
 func TestRouter(t *testing.T) {
+	content := "line1\nline2\nline3\n"
+	file := utils.CreateTempFile(t, content)
+
 	tests := []struct {
 		name        string
 		pathPrefix  string
@@ -70,7 +82,7 @@ func TestRouter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := zerolog.New(nil)
-			svc, err := services.New(services.Dependencies{Logger: &logger})
+			svc, err := services.New(services.Dependencies{Logger: &logger, FilePath: file.Name()})
 			if err != nil {
 				t.Fatalf("Failed to create svc: %v", err)
 			}

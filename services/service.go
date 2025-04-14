@@ -12,11 +12,13 @@ import (
 )
 
 type Dependencies struct {
-	Logger *zerolog.Logger
+	Logger   *zerolog.Logger
+	FilePath string
 }
 
 type service struct {
-	logger *zerolog.Logger
+	logger   *zerolog.Logger
+	filePath string
 }
 
 // RouterOpts represents router options
@@ -35,8 +37,12 @@ func New(d Dependencies) (Service, error) {
 	if d.Logger == nil {
 		return nil, errors.New("logger is required")
 	}
+	if d.FilePath == "" {
+		return nil, errors.New("file path is required")
+	}
 	return service{
-		logger: d.Logger,
+		logger:   d.Logger,
+		filePath: d.FilePath,
 	}, nil
 }
 
@@ -44,7 +50,7 @@ func New(d Dependencies) (Service, error) {
 // router param is optional, if nil a new router is created
 // if a router is passed the new Router gets augmented with the quantifier service
 func (s service) Router(opts RouterOpts) (*http.ServeMux, error) {
-	h, err := handler.New(s.logger)
+	h, err := handler.New(s.logger, s.filePath)
 	if err != nil {
 		return nil, err
 	}
