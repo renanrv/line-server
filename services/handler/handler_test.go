@@ -170,27 +170,28 @@ func TestHandler_GetV0LinesLineIndex(t *testing.T) {
 			expectedError:    errors.New("could not open file"),
 		},
 		{
-			name: "No closest index found",
-			fileIndexSummary: &fileprocessing.FileIndexSummary{
-				Index: map[int]int64{
-					4: 12,
-					5: 18,
-				},
-				IndexOffset:   1,
-				NumberOfLines: 1,
-			},
-			request: server.GetV0LinesLineIndexRequestObject{
-				LineIndex: 1,
-			},
-			expectedResponse: nil,
-			expectedError:    errors.New("no file index found"),
-		},
-		{
 			name: "Invalid line index with negative value",
 			request: server.GetV0LinesLineIndexRequestObject{
 				LineIndex: -1,
 			},
-			expectedResponse: server.GetV0LinesLineIndex413JSONResponse{},
+			expectedResponse: server.GetV0LinesLineIndex413Response{},
+			expectedError:    nil,
+		},
+		{
+			name: "Invalid line index with negative value with file index summary",
+			fileIndexSummary: &fileprocessing.FileIndexSummary{
+				Index: map[int]int64{
+					0: 0,
+					1: 6,
+					2: 12,
+				},
+				IndexOffset:   1,
+				NumberOfLines: 3,
+			},
+			request: server.GetV0LinesLineIndexRequestObject{
+				LineIndex: -1,
+			},
+			expectedResponse: server.GetV0LinesLineIndex413Response{},
 			expectedError:    nil,
 		},
 		{
@@ -198,7 +199,24 @@ func TestHandler_GetV0LinesLineIndex(t *testing.T) {
 			request: server.GetV0LinesLineIndexRequestObject{
 				LineIndex: 3,
 			},
-			expectedResponse: server.GetV0LinesLineIndex413JSONResponse{},
+			expectedResponse: server.GetV0LinesLineIndex413Response{},
+			expectedError:    nil,
+		},
+		{
+			name: "Invalid line index with value greater than number of lines with file index summary",
+			fileIndexSummary: &fileprocessing.FileIndexSummary{
+				Index: map[int]int64{
+					0: 0,
+					1: 6,
+					2: 12,
+				},
+				IndexOffset:   1,
+				NumberOfLines: 3,
+			},
+			request: server.GetV0LinesLineIndexRequestObject{
+				LineIndex: 3,
+			},
+			expectedResponse: server.GetV0LinesLineIndex413Response{},
 			expectedError:    nil,
 		},
 		{

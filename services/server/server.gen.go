@@ -24,17 +24,8 @@ type LineResponse struct {
 	Text string `json:"text"`
 }
 
-// NoResponse defines model for NoResponse.
-type NoResponse = map[string]interface{}
-
 // LineIndex defines model for LineIndex.
 type LineIndex = int
-
-// RequestEntityTooLargeResponse defines model for RequestEntityTooLargeResponse.
-type RequestEntityTooLargeResponse = NoResponse
-
-// UnauthorizedResponse defines model for UnauthorizedResponse.
-type UnauthorizedResponse = NoResponse
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -199,11 +190,15 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	return m
 }
 
+type BadRequestResponseTextResponse string
+
 type LineResponseJSONResponse LineResponse
 
-type RequestEntityTooLargeResponseJSONResponse NoResponse
+type RequestEntityTooLargeResponseResponse struct {
+}
 
-type UnauthorizedResponseJSONResponse NoResponse
+type UnauthorizedResponseResponse struct {
+}
 
 type GetV0LinesLineIndexRequestObject struct {
 	LineIndex LineIndex `json:"line_index"`
@@ -222,26 +217,28 @@ func (response GetV0LinesLineIndex200JSONResponse) VisitGetV0LinesLineIndexRespo
 	return json.NewEncoder(w).Encode(response)
 }
 
-type GetV0LinesLineIndex401JSONResponse struct {
-	UnauthorizedResponseJSONResponse
+type GetV0LinesLineIndex400TextResponse string
+
+func (response GetV0LinesLineIndex400TextResponse) VisitGetV0LinesLineIndexResponse(w http.ResponseWriter) error {
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(400)
+
+	_, err := w.Write([]byte(response))
+	return err
 }
 
-func (response GetV0LinesLineIndex401JSONResponse) VisitGetV0LinesLineIndexResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
+type GetV0LinesLineIndex401Response = UnauthorizedResponseResponse
+
+func (response GetV0LinesLineIndex401Response) VisitGetV0LinesLineIndexResponse(w http.ResponseWriter) error {
 	w.WriteHeader(401)
-
-	return json.NewEncoder(w).Encode(response)
+	return nil
 }
 
-type GetV0LinesLineIndex413JSONResponse struct {
-	RequestEntityTooLargeResponseJSONResponse
-}
+type GetV0LinesLineIndex413Response = RequestEntityTooLargeResponseResponse
 
-func (response GetV0LinesLineIndex413JSONResponse) VisitGetV0LinesLineIndexResponse(w http.ResponseWriter) error {
-	w.Header().Set("Content-Type", "application/json")
+func (response GetV0LinesLineIndex413Response) VisitGetV0LinesLineIndexResponse(w http.ResponseWriter) error {
 	w.WriteHeader(413)
-
-	return json.NewEncoder(w).Encode(response)
+	return nil
 }
 
 // StrictServerInterface represents all server handlers.

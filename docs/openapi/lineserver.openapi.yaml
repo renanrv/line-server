@@ -22,6 +22,9 @@ paths:
         200:
           description: Returns the text of the requested line
           $ref: "#/components/responses/LineResponse"
+        400:
+          description: Invalid format for parameter line index
+          $ref: "#/components/responses/BadRequestResponse"
         401:
           description: Access token in the headers is missing or invalid
           $ref: "#/components/responses/UnauthorizedResponse"
@@ -59,16 +62,18 @@ components:
           type: string
           example: "This is a sample line of text from the file."
 
-    NoResponse:
-      type: object
-
   responses:
+    BadRequestResponse:
+      description: Invalid format for parameter line index
+      content:
+          text/plain:
+            schema:
+              type: string
+              example: "Invalid format for parameter line_index: error binding string parameter: strconv.ParseInt: parsing \"text\": invalid syntax"
+
     UnauthorizedResponse:
       description: Access token in the headers is missing or invalid
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/NoResponse"
+      content: {}
 
     LineResponse:
       description: Response for requested line
@@ -79,7 +84,4 @@ components:
 
     RequestEntityTooLargeResponse:
       description: The requested line is beyond the end of the file
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/NoResponse"
+      content: {}

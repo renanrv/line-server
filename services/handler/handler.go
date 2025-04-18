@@ -45,7 +45,7 @@ func (h Handler) GetV0LinesLineIndex(_ context.Context, request server.GetV0Line
 	}
 	// Check requested line index and result to infer if invalid index was requested
 	if request.LineIndex < 0 || (text == "" && err == nil) {
-		return server.GetV0LinesLineIndex413JSONResponse{}, nil
+		return server.GetV0LinesLineIndex413Response{}, nil
 	}
 	// Returns successful response
 	return server.GetV0LinesLineIndex200JSONResponse{
@@ -84,6 +84,10 @@ func (h Handler) seekFileLine(file *os.File, lineIndex int) (string, error) {
 	err := h.validateFileIndexSummary()
 	if err != nil {
 		return "", err
+	}
+	// Check if the line index is negative or greater than the number of lines in the file
+	if lineIndex < 0 || lineIndex >= h.FileIndexSummary.NumberOfLines {
+		return "", nil
 	}
 	start := int64(0)
 	start, ok := h.FileIndexSummary.Index[lineIndex]
