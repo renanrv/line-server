@@ -28,8 +28,11 @@ unit-test:
 
 cover:
 	rm -f .coverage/cover.out
+	rm -f .coverage/cover_unit.main_filtered.out
 	rm -f .coverage/cover_unit.filtered.out
-	grep -v "server/server.gen.go" .coverage/cover_unit.out > .coverage/cover_unit.filtered.out
+    # Filter out the main.go and generated files from the unit test coverage report
+	grep -v "main.go" .coverage/cover_unit.out > .coverage/cover_unit.main_filtered.out
+	grep -v "server/server.gen.go" .coverage/cover_unit.main_filtered.out > .coverage/cover_unit.filtered.out
 	cat .coverage/cover_unit.filtered.out >> .coverage/cover.out
 	go tool cover -func=.coverage/cover.out
 

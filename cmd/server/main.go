@@ -12,6 +12,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/pkg/errors"
+	"github.com/renanrv/line-server/pkg/fileprocessing"
 	"github.com/renanrv/line-server/pkg/middlewares"
 	"github.com/renanrv/line-server/services"
 	"github.com/rs/cors"
@@ -33,6 +34,8 @@ func main() {
 		logLevel = fs.Int("log_level", int(zerolog.InfoLevel), "the log level used for logging")
 		filePath = fs.String("file_path", "./internal-tools/file-generator/output/output.txt",
 			"the path to the file that will be used to read the lines")
+		maxIndexes = fs.Int("max_indexes", 1000, "the maximum number of indexes to generate, "+
+			"taking into account the limited memory available")
 	)
 	fs.Usage = usageFor(fs, os.Args[0]+" [flags]")
 	_ = fs.Parse(os.Args[1:])
@@ -47,6 +50,7 @@ func main() {
 		Str("http_addr", *httpAddr).
 		Int("log_level", *logLevel).
 		Str("file_path", *filePath).
+		Int("max_indexes", *maxIndexes).
 		Msg("non-secret arguments")
 
 	zeroLog.Info().Msg("starting line server")
@@ -64,9 +68,17 @@ func main() {
 			Msg("CORS is disabled")
 	}
 
+	fileIndexSummary, err := fileprocessing.GenerateIndex(*filePath, *maxIndexes)
+	// Validate file index summary
+	if err != nil {
+		zeroLog.Fatal().Err(err).Msg("failed to generate index")
+	}
+	zeroLog.Info().Int("length", len(fileIndexSummary.Index)).Msg("index generated successfully")
+
 	dependencies := services.Dependencies{
-		Logger:   &zeroLog,
-		FilePath: *filePath,
+		Logger:           &zeroLog,
+		FilePath:         *filePath,
+		FileIndexSummary: fileIndexSummary,
 	}
 	srv, err := services.New(dependencies)
 	if err != nil {

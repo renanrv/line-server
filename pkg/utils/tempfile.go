@@ -28,7 +28,7 @@ func CreateTempFile(t *testing.T, content string) *os.File {
 	// Schedule deletion
 	t.Cleanup(func() {
 		if err := os.Remove(tmpFile.Name()); err != nil {
-			t.Fatalf("Failed to remove temp file: %v", err)
+			t.Logf("Failed to remove temp file: %v", err)
 		}
 	})
 

@@ -6,19 +6,22 @@ import (
 	"net/http"
 
 	"github.com/pkg/errors"
+	"github.com/renanrv/line-server/pkg/fileprocessing"
 	"github.com/renanrv/line-server/services/handler"
 	"github.com/renanrv/line-server/services/server"
 	"github.com/rs/zerolog"
 )
 
 type Dependencies struct {
-	Logger   *zerolog.Logger
-	FilePath string
+	Logger           *zerolog.Logger
+	FilePath         string
+	FileIndexSummary *fileprocessing.FileIndexSummary
 }
 
 type service struct {
-	logger   *zerolog.Logger
-	filePath string
+	logger           *zerolog.Logger
+	filePath         string
+	fileIndexSummary *fileprocessing.FileIndexSummary
 }
 
 // RouterOpts represents router options
@@ -41,16 +44,15 @@ func New(d Dependencies) (Service, error) {
 		return nil, errors.New("file path is required")
 	}
 	return service{
-		logger:   d.Logger,
-		filePath: d.FilePath,
+		logger:           d.Logger,
+		filePath:         d.FilePath,
+		fileIndexSummary: d.FileIndexSummary,
 	}, nil
 }
 
 // Router returns a router configured with the quantifier service
-// router param is optional, if nil a new router is created
-// if a router is passed the new Router gets augmented with the quantifier service
 func (s service) Router(opts RouterOpts) (*http.ServeMux, error) {
-	h, err := handler.New(s.logger, s.filePath)
+	h, err := handler.New(s.logger, s.filePath, s.fileIndexSummary)
 	if err != nil {
 		return nil, err
 	}
