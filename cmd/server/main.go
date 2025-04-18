@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,6 +10,7 @@ import (
 	"syscall"
 	"text/tabwriter"
 
+	"github.com/namsral/flag"
 	"github.com/pkg/errors"
 	"github.com/renanrv/line-server/pkg/fileprocessing"
 	"github.com/renanrv/line-server/pkg/middlewares"
@@ -32,7 +32,7 @@ func main() {
 		corsAllowedOrigins = fs.String("cors_allowed_origins", "http://localhost:8080",
 			"comma separated list of allowed origins")
 		logLevel = fs.Int("log_level", int(zerolog.InfoLevel), "the log level used for logging")
-		filePath = fs.String("file_path", "./internal-tools/file-generator/output/output.txt",
+		filePath = fs.String("file_path", "./data/sample_1000.txt",
 			"the path to the file that will be used to read the lines")
 		maxIndexes = fs.Int("max_indexes", 1000, "the maximum number of indexes to generate, "+
 			"taking into account the limited memory available")
