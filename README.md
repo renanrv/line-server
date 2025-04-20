@@ -1,4 +1,8 @@
 # Line Server
+
+![CI](https://github.com/renanrv/line-server/actions/workflows/go-tests.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-0%-brightgreen)
+
 Line Server is a network server that serves individual lines of an immutable text file over the network to clients using the following simple REST API:
 
  * `GET /lines/<line index>`

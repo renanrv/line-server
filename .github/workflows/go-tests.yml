@@ -48,7 +48,16 @@ jobs:
           grep -v "main.go" .coverage/cover_unit.out > .coverage/cover_unit.main_filtered.out
           grep -v "server/server.gen.go" .coverage/cover_unit.main_filtered.out > .coverage/cover_unit.filtered.out
           cat .coverage/cover_unit.filtered.out >> .coverage/cover.out
+          go tool cover -func=.coverage/cover.out | grep total | awk '{print $3}' > coverage.txt
           go tool cover -func=.coverage/cover.out
+
+      # Update README with coverage percentage
+      - name: Update README
+        run: |
+          COVERAGE=$(cat coverage.txt)
+          sed -i "s/!\[Coverage\](.*)/![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}-brightgreen)/" README.md
+        env:
+          COVERAGE: ${{ steps.test.outputs.coverage }}
 
       # Upload coverage report as an artifact
       - name: Upload coverage report
