@@ -40,4 +40,4 @@ jobs:
 
       # Run tests
       - name: Run tests
-        run: go test ./... -v
+        run: go test -race -benchmem -tags=unit ./... -v
