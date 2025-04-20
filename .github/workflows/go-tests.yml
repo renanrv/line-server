@@ -36,6 +36,22 @@ jobs:
       - name: Install dependencies
         run: go mod tidy
 
-      # Run tests
-      - name: Run tests
-        run: go test -race -benchmem -tags=unit ./... -v
+      # Run tests and generate coverage report
+      - name: Run tests with coverage
+        run: |
+          mkdir -p .coverage
+          rm -f .coverage/cover_unit.out
+          go test -timeout=10s -race -benchmem -tags=unit -coverpkg=./... -coverprofile=".coverage/cover_unit.out" ./...
+          rm -f .coverage/cover.out
+          rm -f .coverage/cover_unit.main_filtered.out
+          rm -f .coverage/cover_unit.filtered.out
+          grep -v "main.go" .coverage/cover_unit.out > .coverage/cover_unit.main_filtered.out
+          grep -v "server/server.gen.go" .coverage/cover_unit.main_filtered.out > .coverage/cover_unit.filtered.out
+          cat .coverage/cover_unit.filtered.out >> .coverage/cover.out
+
+      # Upload coverage report as an artifact
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: .coverage/cover.out
