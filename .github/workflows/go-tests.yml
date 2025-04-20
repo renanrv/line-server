@@ -48,6 +48,7 @@ jobs:
           grep -v "main.go" .coverage/cover_unit.out > .coverage/cover_unit.main_filtered.out
           grep -v "server/server.gen.go" .coverage/cover_unit.main_filtered.out > .coverage/cover_unit.filtered.out
           cat .coverage/cover_unit.filtered.out >> .coverage/cover.out
+          go tool cover -func=.coverage/cover.out
 
       # Upload coverage report as an artifact
       - name: Upload coverage report
