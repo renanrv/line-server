@@ -51,17 +51,12 @@ jobs:
           go tool cover -func=.coverage/cover.out | grep total | awk '{print $3}' > coverage.txt
           go tool cover -func=.coverage/cover.out
 
-      # Update README with coverage percentage
-      - name: Update README
-        run: |
-          COVERAGE=$(cat coverage.txt)
-          sed -i "s|!\[Coverage\](.*)|![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}-brightgreen)|" README.md
-        env:
-          COVERAGE: ${{ steps.test.outputs.coverage }}
-
-      # Upload coverage report as an artifact
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+      # Generate HTML coverage report
+      - name: Update coverage report
+        uses: ncruces/go-coverage-report@v0
         with:
-          name: coverage-report
-          path: .coverage/cover.out
+          coverage-file: .coverage/cover.out
+          report: true
+          chart: true
+          amend: true
+        continue-on-error: true
