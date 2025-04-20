@@ -55,7 +55,7 @@ jobs:
       - name: Update README
         run: |
           COVERAGE=$(cat coverage.txt)
-          sed -i "s/!\[Coverage\](.*)/![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}-brightgreen)/" README.md
+          sed -i "s|!\[Coverage\](.*)|![Coverage](https://img.shields.io/badge/coverage-${COVERAGE}-brightgreen)|" README.md
         env:
           COVERAGE: ${{ steps.test.outputs.coverage }}
 
