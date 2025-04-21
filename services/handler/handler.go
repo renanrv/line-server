@@ -3,7 +3,7 @@ package handler
 import (
 	"bufio"
 	"context"
-	"fmt"
+	"io"
 	"os"
 
 	"github.com/pkg/errors"
@@ -20,9 +20,10 @@ type Handler struct {
 }
 
 // New function instantiates a handler, checking if all dependencies are valid
-func New(l *zerolog.Logger, filePath string, fileIndexSummary *fileprocessing.FileIndexSummary) (server.StrictServerInterface, error) {
+func New(l *zerolog.Logger, filePath string, fileIndexSummary *fileprocessing.FileIndexSummary,
+) (server.StrictServerInterface, error) {
 	// Validates the handler's dependencies.
-	// File index summary is optional, but if provided,
+	// FilePath index summary is optional, but if provided,
 	// it is validated by validateFileIndexSummary function before being used.
 	err := validate(l, filePath)
 	if err != nil {
@@ -40,11 +41,11 @@ func (h Handler) GetV0LinesLineIndex(_ context.Context, request server.GetV0Line
 ) (server.GetV0LinesLineIndexResponseObject, error) {
 	// Obtain the result from the file according the requested line index
 	text, err := h.readLine(request.LineIndex)
-	if err != nil {
+	if err != nil && err.Error() != io.EOF.Error() {
 		return nil, err
 	}
 	// Check requested line index and result to infer if invalid index was requested
-	if request.LineIndex < 0 || (text == "" && err == nil) {
+	if request.LineIndex < 0 || (text == "" && err != nil && err.Error() == io.EOF.Error()) {
 		return server.GetV0LinesLineIndex413Response{}, nil
 	}
 	// Returns successful response
@@ -59,11 +60,12 @@ func (h Handler) GetV0LinesLineIndex(_ context.Context, request server.GetV0Line
 func (h Handler) readLine(lineIndex int) (string, error) {
 	file, err := os.Open(h.FilePath)
 	if err != nil {
-		return "", errors.New("could not open file")
+		return "", errors.Wrap(err, "failed to open file")
 	}
 	defer func() {
-		if err := file.Close(); err != nil {
-			fmt.Printf("error closing file: %v\n", err)
+		err = file.Close()
+		if err != nil {
+			h.Logger.Error().Err(err).Msg("failed to close file")
 		}
 	}()
 	// If no file index summary is available, read the file line by line
@@ -87,7 +89,7 @@ func (h Handler) seekFileLine(file *os.File, lineIndex int) (string, error) {
 	}
 	// Check if the line index is negative or greater than the number of lines in the file
 	if lineIndex < 0 || lineIndex >= h.FileIndexSummary.NumberOfLines {
-		return "", nil
+		return "", io.EOF
 	}
 	start := int64(0)
 	start, ok := h.FileIndexSummary.Index[lineIndex]
@@ -99,7 +101,10 @@ func (h Handler) seekFileLine(file *os.File, lineIndex int) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		h.Logger.Debug().Int("index", lineIndex).Int("closest_index", currentLine).Msg("closest index available in index map")
+		h.Logger.Debug().
+			Int("index", lineIndex).
+			Int("closest_index", currentLine).
+			Msg("closest index available in index map")
 		start, ok = h.FileIndexSummary.Index[currentLine]
 		if !ok {
 			h.Logger.Warn().Int("index", lineIndex).Msg("no closest index available in index map")
@@ -174,13 +179,11 @@ func scanFile(lineIndex int, file *os.File, currentLine int) (string, error) {
 		}
 		currentLine++
 	}
-
 	if err := scanner.Err(); err != nil {
-		return "", errors.Wrap(err, "Error reading file")
+		return "", errors.Wrap(err, "error reading file")
 	}
-
 	// Line index out of range
-	return "", nil
+	return "", io.EOF
 }
 
 // validate function validates the dependencies to instantiate a new handler

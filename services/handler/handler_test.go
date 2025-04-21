@@ -167,7 +167,7 @@ func TestHandler_GetV0LinesLineIndex(t *testing.T) {
 				LineIndex: 1,
 			},
 			expectedResponse: nil,
-			expectedError:    errors.New("could not open file"),
+			expectedError:    errors.New("failed to open file"),
 		},
 		{
 			name: "Invalid line index with negative value",
@@ -298,7 +298,7 @@ func TestHandler_GetV0LinesLineIndex(t *testing.T) {
 			response, err := h.GetV0LinesLineIndex(ctx, tt.request)
 			assert.Equal(t, tt.expectedResponse, response)
 			if tt.expectedError != nil || err != nil {
-				assert.Equal(t, tt.expectedError.Error(), err.Error())
+				assert.Contains(t, err.Error(), tt.expectedError.Error())
 			}
 		})
 	}

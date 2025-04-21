@@ -27,15 +27,16 @@ func main() {
 	fs := flag.NewFlagSet("line-server", flag.ExitOnError)
 
 	var (
-		debugAddr          = fs.String("debug_addr", ":8081", "Debug and metrics listen address")
+		debugAddr          = fs.String("debug_addr", ":8081", "debug and metrics listen address")
 		httpAddr           = fs.String("http_addr", ":8080", "the address that will expose the server API")
 		corsAllowedOrigins = fs.String("cors_allowed_origins", "http://localhost:8080",
 			"comma separated list of allowed origins")
 		logLevel = fs.Int("log_level", int(zerolog.InfoLevel), "the log level used for logging")
-		filePath = fs.String("file_path", "./data/sample_1000.txt",
+		filePath = fs.String("file_path", "./data/sample_100.txt",
 			"the path to the file that will be used to read the lines")
-		maxIndexes = fs.Int("max_indexes", 1000, "the maximum number of indexes to generate, "+
-			"taking into account the limited memory available")
+		maxIndexes = fs.Int("max_indexes", 0, "the maximum number of indexes to generate, "+
+			"taking into account the limited memory available. If 0, it will use all available memory. If "+
+			"negative, it will not generate any indexes.")
 	)
 	fs.Usage = usageFor(fs, os.Args[0]+" [flags]")
 	_ = fs.Parse(os.Args[1:])
@@ -68,12 +69,16 @@ func main() {
 			Msg("CORS is disabled")
 	}
 
-	fileIndexSummary, err := fileprocessing.GenerateIndex(*filePath, *maxIndexes)
-	// Validate file index summary
-	if err != nil {
-		zeroLog.Fatal().Err(err).Msg("failed to generate index")
+	// Check if indexes should be generated
+	var fileIndexSummary *fileprocessing.FileIndexSummary = nil
+	if *maxIndexes >= 0 {
+		fileIndexSummary, err := fileprocessing.GenerateIndex(&zeroLog, *filePath, *maxIndexes)
+		// Validate file index summary
+		if err != nil {
+			zeroLog.Fatal().Err(err).Msg("failed to generate index")
+		}
+		zeroLog.Info().Int("length", len(fileIndexSummary.Index)).Msg("index generated successfully")
 	}
-	zeroLog.Info().Int("length", len(fileIndexSummary.Index)).Msg("index generated successfully")
 
 	dependencies := services.Dependencies{
 		Logger:           &zeroLog,
@@ -110,7 +115,7 @@ func main() {
 	go func() {
 		zeroLog.Info().Msgf("starting server on port %s", *httpAddr)
 		if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			// Log fatal error if the server fails to start or if it shuts down unexpectedly
+			// Log error if the server fails to start or if it shuts down unexpectedly
 			zeroLog.Error().Err(err).Msg("http server stopped")
 		}
 	}()

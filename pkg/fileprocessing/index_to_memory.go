@@ -7,6 +7,8 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/rs/zerolog"
+	"github.com/shirou/gopsutil/v4/mem"
 )
 
 // FileIndexSummary holds the index map and metadata about the indexed file.
@@ -16,53 +18,90 @@ type FileIndexSummary struct {
 	NumberOfLines int
 }
 
+// memoryLimitFactor defines the fraction of total system memory allowed for index usage.
+const memoryLimitFactor = 0.7
+
+// Estimate the memory usage per index entry (approximate).
+const bytesPerIndexEntry = 16 // 8 bytes for int key + 8 bytes for int64 value (map overhead excluded)
+
 // GenerateIndex reads a file and generates an index of line numbers
 // and their corresponding byte offsets.
 // The index is kept in memory and is used to quickly access lines in the file.
-// The function takes the file path and the maximum number of indexes to generate.
-func GenerateIndex(filePath string, maxIndexes int) (*FileIndexSummary, error) {
-	file, err := os.Open(filePath)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to open file %s", filePath)
+// The function takes the file path as argument and maxIndexes to limit the number of indexes.
+// If maxIndexes is 0, it calculates the number of indexes that can be generated based on the available memory.
+func GenerateIndex(logger *zerolog.Logger, filePath string, maxIndexes int) (*FileIndexSummary, error) {
+	// Validate arguments
+	if logger == nil {
+		return nil, errors.New("logger cannot be nil")
 	}
+	if filePath == "" {
+		return nil, errors.New("file path cannot be empty")
+	}
+	// Open the file
+	file, err := os.Open(filePath)
+	// Close the file when done
 	defer func() {
 		if err := file.Close(); err != nil {
-			fmt.Printf("Error closing file: %v\n", err)
+			logger.Error().Err(err).Msg("failed to close file")
 		}
 	}()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open file")
+	}
 	// Count the number of lines in the file
 	linesCount, err := countLines(file)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to count lines")
 	}
-	// No index is generated if file does not have lines or maxIndexes is less than or equal to 0
-	if linesCount == 0 || maxIndexes <= 0 {
+	if linesCount == 0 {
 		return nil, nil
 	}
-	// Reset the file pointer to the beginning
+	// Seek to the beginning of the file
 	_, err = file.Seek(0, 0)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to seek to beginning of file")
 	}
-	// Calculate the number of indexes to generate
-	indexOffset := math.Ceil(float64(linesCount) / float64(maxIndexes))
+
+	// If maxIndexes is not provided, calculate the maximum number of indexes
+	if maxIndexes == 0 {
+		// Determine available memory for index creation
+		vmStat, err := mem.VirtualMemory()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get system info")
+		}
+
+		// Calculate the maximum number of indexes based on available memory
+		availableMemory := float64(vmStat.Available) * memoryLimitFactor
+		maxIndexes = int(availableMemory / bytesPerIndexEntry)
+
+		logger.Info().
+			Str("memory limit factor", fmt.Sprintf("%.2f", memoryLimitFactor)).
+			Str("available memory", fmt.Sprintf("%.2f (GB)", float64(vmStat.Available)/1e9)).
+			Str("available memory for index generation", fmt.Sprintf("%.2f (GB)", availableMemory/1e9)).
+			Int("maximum number of indexes", maxIndexes).
+			Msg("Memory and index statistics")
+	}
+	if maxIndexes <= 0 {
+		return nil, errors.New("insufficient memory available for indexing")
+	}
+	// Calculate the index offset
+	indexOffset := int(math.Ceil(float64(linesCount) / float64(maxIndexes)))
 
 	fileIndexSummary := &FileIndexSummary{
-		IndexOffset:   int(indexOffset),
+		IndexOffset:   indexOffset,
 		NumberOfLines: linesCount,
 	}
-	indexMap := map[int]int64{}
+	indexMap := make(map[int]int64)
 	var offset int64 = 0
 	currentLine := 0
 	scanner := bufio.NewScanner(file)
+	// Read the file line by line and populate the index map
 	for scanner.Scan() {
-		// Only add the index if the line number is a multiple of indexOffset
-		if currentLine%int(indexOffset) == 0 {
+		if currentLine%indexOffset == 0 {
 			indexMap[currentLine] = offset
 		}
-		// Increment the offset by the length of the line + 1 for '\n'
-		offset += int64(len(scanner.Bytes()) + 1)
-		currentLine += 1
+		offset += int64(len(scanner.Bytes()) + 1) // +1 for '\n'
+		currentLine++
 	}
 	if err := scanner.Err(); err != nil {
 		return nil, errors.Wrap(err, "error reading file")

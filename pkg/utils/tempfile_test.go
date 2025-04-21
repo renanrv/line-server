@@ -37,7 +37,7 @@ func TestCreateTempFile(t *testing.T) {
 				t.Fatalf("Failed to read temp file: %v", err)
 			}
 			if string(data) != tt.content {
-				t.Errorf("File content mismatch: got %q, want %q", string(data), tt.content)
+				t.Errorf("FilePath content mismatch: got %q, want %q", string(data), tt.content)
 			}
 		})
 	}
