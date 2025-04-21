@@ -8,7 +8,6 @@ services:
     image: line-server
     environment:
       FILE_PATH: "data/sample_100.txt"
-      MAX_INDEXES: "100"
     ports:
       - "8080:8080"
     volumes:
