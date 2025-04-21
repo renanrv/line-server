@@ -179,19 +179,51 @@ The `file-generator` is an internal tool designed to generate large text files f
 
 To generate a file, run the `file-generator` tool with the following command:
 
+##### Local setup
 ```bash
 go run ./internal-tools/file-generator/main.go <file_size_gb> <output_file_path>
 ```
 
-##### Command-Line Arguments
+###### Command-Line Arguments
 * `file_size_gb`: Specifies the size in GB for the generated file.
 * `output_file_path`: Specifies the path to the output file.
 
-##### Example
+###### Example
 To generate a file with 1 GB at `./data/sample.txt`, run:
 
 ```bash
 go run ./internal-tools/file-generator/main.go 1 ./data/sample.txt
+```
+
+This will create a file named `sample.txt` in the `data` directory, containing all the lines of unique strings that fit within 1 GB.
+
+##### Using Docker
+
+```bash
+docker run -v ./data:/app/data -it line-server ./file-generator <file_size_gb> <output_file_path>
+```
+
+###### Example
+To generate a file with 1 GB at `./data/sample.txt`, run:
+
+```bash
+docker run -v ./data:/app/data -it line-server ./file-generator 1 ./data/sample.txt
+```
+
+This will create a file named `sample.txt` in the `data` directory, containing all the lines of unique strings that fit within 1 GB.
+
+
+##### Using Docker Compose
+
+```bash
+docker-compose run --rm -it line-server ./file-generator <file_size_gb> <output_file_path>
+```
+
+###### Example
+To generate a file with 1 GB at `./data/sample.txt`, run:
+
+```bash
+docker-compose run --rm -it line-server ./file-generator 1 ./data/sample.txt
 ```
 
 This will create a file named `sample.txt` in the `data` directory, containing all the lines of unique strings that fit within 1 GB.
